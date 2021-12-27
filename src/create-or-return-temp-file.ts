@@ -1,5 +1,5 @@
 import { join } from "https://deno.land/std/path/mod.ts";
-import { Resource } from "./resource.ts";
+import { CreatorFn, CreatorOutput, Resource } from "./resource.ts";
 import {
   ensureDir,
   exists,
@@ -18,9 +18,9 @@ export type CreateOrReturnTempFileOptions = {
 
 export const clearTemp = () => emptyDir(tempDirPath);
 export const createOrReturnTempFile = async (
-  resource: Resource,
+  resource: { name: string; creatorFn: CreatorFn },
   options?: CreateOrReturnTempFileOptions
-): Promise<any> => {
+): Promise<CreatorOutput> => {
   await ensureDir(tempDirPath);
   const tempPath = join(tempDirPath, resource.name);
   const tempLockPath = join(tempDirPath, resource.name + ".lock");
@@ -56,12 +56,17 @@ export const createOrReturnTempFile = async (
       }
 
       const fileBuffer = await Deno.readTextFile(tempPath);
-      return { data: JSON.parse(fileBuffer), path: tempPath, created: false };
+      return {
+        data: JSON.parse(fileBuffer),
+        path: tempPath,
+        created: false,
+        date: new Date(),
+      };
     }
 
     const data = await resource.creatorFn();
     await Deno.writeTextFile(tempPath, JSON.stringify(data));
-    return { path: tempPath, data, created: true };
+    return { path: tempPath, data, created: true, date: new Date() };
   } finally {
     if (lockFileCreated) await Deno.remove(tempLockPath);
   }
