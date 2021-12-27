@@ -16,7 +16,7 @@ export type CreateOrReturnTempFileOptions = {
   maxWaitLoops?: number;
 };
 
-export const cleanTemp = () => emptyDir(tempDirPath);
+export const clearTemp = () => emptyDir(tempDirPath);
 export const createOrReturnTempFile = async (
   resource: Resource,
   options?: CreateOrReturnTempFileOptions
