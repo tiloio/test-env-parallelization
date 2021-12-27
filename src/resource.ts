@@ -1,7 +1,6 @@
 export type CreatorFn<
-  Options = any,
   CreatorOutputData extends DefaultCratorOutputData = DefaultCratorOutputData
-> = (options?: Options) => Promise<CreatorOutputData>;
+> = () => Promise<CreatorOutputData>;
 
 export type DefaultCratorOutputData = { [key: string]: string };
 export type CreatorOutput<
@@ -14,12 +13,11 @@ export type CreatorOutput<
 };
 
 export type Resource<
-  Output extends DefaultCratorOutputData | void = any,
-  CreatorOutputData extends DefaultCratorOutputData = DefaultCratorOutputData,
-  Options = undefined
+  Output extends DefaultCratorOutputData = any,
+  CreatorOutputData extends DefaultCratorOutputData = DefaultCratorOutputData
 > = {
   name: string;
-  creatorFn: CreatorFn<Options, CreatorOutputData>;
+  creatorFn: CreatorFn<CreatorOutputData>;
   initializationFn: (
     creatorOutput?: CreatorOutput<CreatorOutputData>
   ) => Promise<Output>;
