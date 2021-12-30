@@ -1,9 +1,9 @@
 import { join } from "https://deno.land/std/path/mod.ts";
-import { CreatorFn, CreatorOutput, Resource } from "./resource.ts";
+import { CreateFnOutput, ResourceCreateFnWithoutOption } from "./resource.ts";
 import {
+  emptyDir,
   ensureDir,
   exists,
-  emptyDir,
 } from "https://deno.land/std@0.78.0/fs/mod.ts";
 import { sleep } from "./sleep.ts";
 import tempDirectory from "https://deno.land/x/temp_dir@v1.0.0/mod.ts";
@@ -16,11 +16,16 @@ export type CreateOrReturnTempFileOptions = {
   maxWaitLoops?: number;
 };
 
+export type CrateOrReturnTemoFileResource = {
+  name: string;
+  creatorFn: ResourceCreateFnWithoutOption;
+};
+
 export const clearTemp = () => emptyDir(tempDirPath);
 export const createOrReturnTempFile = async (
-  resource: { name: string; creatorFn: CreatorFn },
-  options?: CreateOrReturnTempFileOptions
-): Promise<CreatorOutput> => {
+  resource: CrateOrReturnTemoFileResource,
+  options?: CreateOrReturnTempFileOptions,
+): Promise<CreateFnOutput> => {
   await ensureDir(tempDirPath);
   const tempPath = join(tempDirPath, resource.name);
   const tempLockPath = join(tempDirPath, resource.name + ".lock");
@@ -32,6 +37,7 @@ export const createOrReturnTempFile = async (
       const lockFile = await Deno.open(tempLockPath, {
         createNew: true,
         write: true,
+        read: true,
       });
       lockFile.close();
       lockFileCreated = true;
@@ -44,12 +50,13 @@ export const createOrReturnTempFile = async (
 
       let doesLockExist = await exists(tempLockPath);
       while (doesLockExist) {
-        if (counter > maxCounter)
+        if (counter > maxCounter) {
           throw new Error(
             `Lock file ${tempLockPath} was not removed in time. Waited ${
               (counter * waitTime) / 1000
-            } seconds.`
+            } seconds.`,
           );
+        }
         counter++;
         await sleep(waitTime);
         doesLockExist = await exists(tempLockPath);
@@ -60,13 +67,18 @@ export const createOrReturnTempFile = async (
         data: JSON.parse(fileBuffer),
         path: tempPath,
         created: false,
-        date: new Date(),
+        createdTimestamp: Date.now(),
       };
     }
 
     const data = await resource.creatorFn();
     await Deno.writeTextFile(tempPath, JSON.stringify(data));
-    return { path: tempPath, data, created: true, date: new Date() };
+    return {
+      path: tempPath,
+      data,
+      created: true,
+      createdTimestamp: Date.now(),
+    };
   } finally {
     if (lockFileCreated) await Deno.remove(tempLockPath);
   }

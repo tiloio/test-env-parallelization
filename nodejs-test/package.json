@@ -1,0 +1,27 @@
+{
+  "name": "nodejs-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^27.4.5",
+    "node-fetch": "^3.1.0",
+    "test-env-parallelization": "file:../npm/main",
+    "test-env-parallelization-jest-adapter": "file:../npm/jest-adapter"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.1",
+    "polka": "^0.5.2"
+  },
+  "jest": {
+    "transform": {}
+  }
+}

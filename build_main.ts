@@ -1,9 +1,10 @@
 import { build } from "https://deno.land/x/dnt@0.11.0/mod.ts";
 
 await build({
-  entryPoints: ["./../run.ts"],
-  outDir: "./../npm",
+  entryPoints: ["./src/mod.ts"],
+  outDir: "./npm/main",
   cjs: false,
+  test: false,
   shims: {
     deno: true,
   },
@@ -11,14 +12,14 @@ await build({
     // package.json properties
     name: "test-env-parallelization",
     version: Deno.args[0],
-    description: "TBD",
+    description: "Test framework independent parallelization helper for test environments.",
     license: "MIT",
     repository: {
       type: "git",
-      url: "git+https://github.com/tiloio/test-randomizing.git",
+      url: "git+https://github.com/tiloio/test-env-parallelization.git",
     },
     bugs: {
-      url: "https://github.com/tiloio/test-randomizing/issues",
+      url: "https://github.com/tiloio/test-env-parallelization/issues",
     },
   },
 });

@@ -1,107 +1,127 @@
 import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
-import { clearCache, createResource } from "./create-resource.ts";
+import { createResource } from "./create-resource.ts";
 import { Resource } from "./resource.ts";
 import {
   assertSpyCall,
   assertSpyCalls,
   spy,
 } from "https://deno.land/x/mock@0.12.1/mod.ts";
-import { clearTemp } from "./create-or-return-temp-file.ts";
+import { withCleanup } from "./with-cleanup.ts";
 
-const cleanup = async () => {
-  await clearTemp();
-  clearCache();
-};
+Deno.test(
+  "creates and intializes the resource",
+  withCleanup(async () => {
+    const expectedResultData = { hello: "world" };
 
-Deno.test("creates and intializes the resource", async () => {
-  await cleanup();
+    const resource = Resource(
+      "test",
+      () => Promise.resolve(expectedResultData as any),
+      (result) => Promise.resolve(result),
+    );
 
-  const expectedResultData = { hello: "world" };
+    const result = await createResource(resource);
 
-  const resource: Resource = {
-    name: "test",
-    creatorFn: () => Promise.resolve(expectedResultData),
-    initializationFn: (result) => Promise.resolve(result),
-  };
-
-  const result = await createResource(resource);
-
-  assertEquals(result.data, expectedResultData);
-  assertEquals(result.created, true);
-});
+    assertEquals(result.data, expectedResultData);
+    assertEquals(result.created, true);
+  }),
+);
 
 Deno.test(
   "creates and intializes the resource with given optional worker id",
-  async () => {
-    await cleanup();
+  withCleanup(async () => {
+    const create = spy();
+    const resource = Resource(
+      "test",
+      create,
+      (result) => Promise.resolve(result),
+    );
 
-    const creatorFn = spy();
-    const resource: Resource = {
-      name: "test",
-      creatorFn,
-      initializationFn: () => Promise.resolve({}),
-    };
+    await createResource(resource, 1);
+    await createResource(resource, 2);
 
-    await createResource(resource, "1");
-    await createResource(resource, "2");
-
-    assertSpyCalls(creatorFn, 2);
-  }
+    assertSpyCalls(create, 2);
+  }),
 );
 
-Deno.test("caches creatorFn result", async () => {
-  await cleanup();
+Deno.test(
+  "caches create result",
+  withCleanup(async () => {
+    const create = spy();
+    const resource = Resource(
+      "test",
+      create,
+      (result) => Promise.resolve(result),
+    );
 
-  const creatorFn = spy();
-  const resource: Resource = {
-    name: "test",
-    creatorFn: creatorFn,
-    initializationFn: (result) => Promise.resolve(result),
-  };
+    await createResource(resource);
+    await createResource(resource);
 
-  await createResource(resource);
-  await createResource(resource);
-
-  assertSpyCalls(creatorFn, 1);
-});
-
-Deno.test("intializes on cache hit", async () => {
-  await cleanup();
-
-  const initializationFn = spy();
-  const resource: Resource = {
-    name: "test",
-    creatorFn: () => Promise.resolve({ hello: "world" }),
-    initializationFn,
-  };
-
-  await createResource(resource);
-  await createResource(resource);
-
-  assertSpyCalls(initializationFn, 2);
-
-  assertEquals(initializationFn.calls[0].args[0].data, { hello: "world" });
-  assertEquals(initializationFn.calls[1].args[0].data, { hello: "world" });
-});
+    assertSpyCalls(create, 1);
+  }),
+);
 
 Deno.test(
-  "does not cache creatorFn result of two different resource names",
-  async () => {
-    await cleanup();
+  "intializes on cache hit",
+  withCleanup(async () => {
+    const init = spy();
+    const resource = Resource(
+      "test",
+      () => Promise.resolve({ hello: "world" } as any),
+      init,
+    );
 
-    const creatorFn = spy();
+    await createResource(resource);
+    await createResource(resource);
 
-    await createResource({
-      name: "test1",
-      creatorFn: creatorFn,
-      initializationFn: (result) => Promise.resolve(result),
-    });
-    await createResource({
-      name: "test2",
-      creatorFn: creatorFn,
-      initializationFn: (result) => Promise.resolve(result),
-    });
+    assertSpyCalls(init, 2);
 
-    assertSpyCalls(creatorFn, 2);
-  }
+    assertEquals(init.calls[0].args[0].data, { hello: "world" });
+    assertEquals(init.calls[1].args[0].data, { hello: "world" });
+  }),
+);
+
+Deno.test(
+  "does not cache create result of two different resource names",
+  withCleanup(
+    async () => {
+      const create = spy();
+
+      await createResource(Resource(
+        "test1",
+        create,
+        (result) => Promise.resolve(result),
+      ));
+      await createResource(Resource(
+        "test2",
+        create,
+        (result) => Promise.resolve(result),
+      ));
+
+      assertSpyCalls(create, 2);
+    },
+  ),
+);
+
+Deno.test(
+  "create is always called with a workerId (defaults to 0)",
+  withCleanup(async () => {
+    const create = spy();
+
+    await createResource(Resource(
+      "test1",
+      create,
+      (result) => Promise.resolve(result),
+    ));
+    await createResource(
+      Resource(
+        "test2",
+        create,
+        (result) => Promise.resolve(result),
+      ),
+      2,
+    );
+
+    assertSpyCall(create, 0, { args: [{ workerId: 0 }] });
+    assertSpyCall(create, 1, { args: [{ workerId: 2 }] });
+  }),
 );

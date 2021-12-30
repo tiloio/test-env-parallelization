@@ -1,35 +1,29 @@
-import { Resource } from "./resource.ts";
 import {
   assertEquals,
   assertStringIncludes,
 } from "https://deno.land/std@0.119.0/testing/asserts.ts";
-import { sleep } from "./sleep.ts";
 import {
-  clearTemp,
+  CrateOrReturnTemoFileResource,
   createOrReturnTempFile,
 } from "./create-or-return-temp-file.ts";
+import { sleep } from "./sleep.ts";
+import { withCleanup } from "./with-cleanup.ts";
 
 Deno.test(
   "create or return temp file should wait until creation is finsihed and return file content",
-  async () => {
-    await clearTemp();
-    const expectedContent = { first: "test1" };
+  withCleanup(async () => {
+    const expectedContent = { first: "test1" } as any;
 
-    const firstBlockingResource: Resource = {
+    const firstBlockingResource: CrateOrReturnTemoFileResource = {
       name: "blocking-test",
       creatorFn: async () => {
         await sleep(11);
         return expectedContent;
       },
-      initializationFn: () => Promise.resolve(),
     };
-    const secondResource: Resource = {
+    const secondResource: CrateOrReturnTemoFileResource = {
       name: "blocking-test",
-      creatorFn: () =>
-        Promise.resolve({
-          second: "test2",
-        }),
-      initializationFn: () => Promise.resolve(),
+      creatorFn: () => Promise.resolve({ second: "test2" } as any),
     };
 
     const runLater = async () => {
@@ -46,28 +40,22 @@ Deno.test(
     assertEquals(shouldBeCreated.created, true);
     assertEquals(shouldBeRead.created, false);
     assertEquals(shouldBeCreated.data, shouldBeRead.data);
-  }
+  }),
 );
 
 Deno.test(
   "create or return temp file should fail if lock file is not release after specified time",
-  async () => {
-    await clearTemp();
-    const firstBlockingResource: Resource = {
+  withCleanup(async () => {
+    const firstBlockingResource: CrateOrReturnTemoFileResource = {
       name: "blocking-test",
       creatorFn: async () => {
         await sleep(11);
-        return { some: "thing" };
+        return { some: "thing" } as any;
       },
-      initializationFn: () => Promise.resolve(),
     };
-    const secondResource: Resource = {
+    const secondResource: CrateOrReturnTemoFileResource = {
       name: "blocking-test",
-      creatorFn: () =>
-        Promise.resolve({
-          second: "test2",
-        }),
-      initializationFn: () => Promise.resolve(),
+      creatorFn: () => Promise.resolve({ second: "test2" } as any),
     };
 
     const runLater = async () => {
@@ -85,5 +73,5 @@ Deno.test(
 
     assertEquals(result?.status, "rejected");
     assertStringIncludes(result?.reason.message, "was not removed in time");
-  }
+  }),
 );
