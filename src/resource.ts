@@ -7,7 +7,7 @@ type JSONObject =
   | { [key: string]: JSONObject };
 export type DefaultOutput = JSONObject;
 
-export type CreateFnOutput<
+export type ResourceCreationResult<
   Data extends DefaultOutput = DefaultOutput,
 > = {
   path: string;
@@ -18,28 +18,29 @@ export type CreateFnOutput<
 
 export type ResourceCreateFnWithoutOption<
   CreateOutput extends DefaultOutput = DefaultOutput,
-> = () => Promise<CreateFnOutput<CreateOutput>>;
+> = () => Promise<CreateOutput>;
 
 export type ResourceCreateFn<
-  CreateOutput extends DefaultOutput = DefaultOutput,
-> = (option: { workerId: number }) => Promise<CreateFnOutput<CreateOutput>>;
+  Output extends DefaultOutput = DefaultOutput,
+> = (option: { workerId: number }) => Promise<Output>;
 
 type ResourceInitFn<
-  CreateOutput extends CreateFnOutput,
-  Output extends DefaultOutput,
-> = (creatorOutput: CreateOutput) => Promise<Output>;
+  CreateOutput extends DefaultOutput,
+  Output extends DefaultOutput = CreateOutput,
+> = (creatorOutput: ResourceCreationResult<CreateOutput>) => Promise<Output>;
 
 /**
  * create: Is only called once for all processes.
  * init: Is called in each process with the output of the create function. The result of the create function is cached.
  */
 export type ResourceInstance<
-  Output extends DefaultOutput,
-  CreateOutput extends CreateFnOutput = CreateFnOutput,
+  CreateOutput extends DefaultOutput = DefaultOutput,
+  Output extends DefaultOutput = CreateOutput,
 > = {
   name: string;
   create: ResourceCreateFn<CreateOutput>;
   init: ResourceInitFn<CreateOutput, Output>;
+  teardown?: () => Promise<void>;
 };
 
 /**
@@ -50,15 +51,17 @@ export type ResourceInstance<
  * @param {Function} [init] - The optional function to initialize the resource. This function would be called for each createResource or createResources call. The result is never cached.
  */
 export const Resource = <
-  Output extends DefaultOutput,
-  CreateOutput extends CreateFnOutput = CreateFnOutput<Output>,
+  CreateOutput extends DefaultOutput = DefaultOutput,
+  Output extends DefaultOutput = CreateOutput,
 >(
   name: string,
   create: ResourceCreateFn<CreateOutput>,
-  init?: ResourceInitFn<CreateOutput, Output>,
+  init?: ResourceInitFn<ResourceCreationResult<CreateOutput>, Output>,
 ) =>
   ({
     name,
     create,
-    init: init ? init : (createOut: CreateOutput) => Promise.resolve(createOut),
-  }) as ResourceInstance<Output, CreateOutput>;
+    init: init ? init : (createOut: ResourceCreationResult<CreateOutput>) =>
+      // deno-lint-ignore no-explicit-any
+      Promise.resolve(createOut.data as any),
+  }) as ResourceInstance<CreateOutput, Output>;

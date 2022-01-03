@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import {
   assertEquals,
   assertStringIncludes,
@@ -73,5 +74,22 @@ Deno.test(
 
     assertEquals(result?.status, "rejected");
     assertStringIncludes(result?.reason.message, "was not removed in time");
+  }),
+);
+Deno.test(
+  "create or return temp file should return temp file on second execution for the same name",
+  withCleanup(async () => {
+    const expectedContent = { first: "test1" } as any;
+
+    const firstBlockingResource: CrateOrReturnTemoFileResource = {
+      name: "test",
+      creatorFn: () => Promise.resolve(expectedContent),
+    };
+
+    await createOrReturnTempFile(firstBlockingResource);
+    const result = await createOrReturnTempFile(firstBlockingResource);
+
+    assertEquals(result.data, expectedContent);
+    assertEquals(result.created, false);
   }),
 );

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "https://deno.land/std@0.119.0/testing/asserts.ts";
 import { createResource } from "./create-resource.ts";
 import { Resource } from "./resource.ts";

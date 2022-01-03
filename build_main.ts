@@ -1,12 +1,18 @@
 import { build } from "https://deno.land/x/dnt@0.11.0/mod.ts";
 
 await build({
-  entryPoints: ["./src/mod.ts"],
+  entryPoints: ["./mod.ts"],
   outDir: "./npm/main",
   cjs: false,
   test: false,
   shims: {
-    deno: true,
+    custom: [{
+      package: {
+        name: "@deno/shim-deno",
+        version: "0.1.1",
+      },
+      globalNames: ["Deno"],
+    }]
   },
   package: {
     // package.json properties

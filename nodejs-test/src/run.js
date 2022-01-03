@@ -3,7 +3,8 @@ import { spawn } from 'child_process';
 
 export const spawnAndWaitForLog = (cmd, log) => new Promise((resolve, reject) => {
 
-    const child = spawn(cmd, '');
+    console.log('run', cmd);
+    const child = spawn(cmd, { shell: '/bin/sh'});
 
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', function (data) {

@@ -5,10 +5,11 @@ import {
   ResourceInstance,
 } from "./resource.ts";
 
+// deno-lint-ignore no-explicit-any
 let cache: { [key: string]: any } = {};
 
 export const createResource = async <T extends DefaultOutput>(
-  resource: ResourceInstance<T>,
+  resource: ResourceInstance<T, T>,
   workerId?: number,
 ): Promise<T> => {
   const resourceName = workerId

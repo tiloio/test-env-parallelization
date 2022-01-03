@@ -1,10 +1,9 @@
 import { join } from "https://deno.land/std/path/mod.ts";
-import { CreateFnOutput, ResourceCreateFnWithoutOption } from "./resource.ts";
 import {
-  emptyDir,
-  ensureDir,
-  exists,
-} from "https://deno.land/std@0.78.0/fs/mod.ts";
+  ResourceCreateFnWithoutOption,
+  ResourceCreationResult,
+} from "./resource.ts";
+import { emptyDir, ensureDir } from "https://deno.land/std@0.78.0/fs/mod.ts";
 import { sleep } from "./sleep.ts";
 import tempDirectory from "https://deno.land/x/temp_dir@v1.0.0/mod.ts";
 
@@ -25,16 +24,24 @@ export const clearTemp = () => emptyDir(tempDirPath);
 export const createOrReturnTempFile = async (
   resource: CrateOrReturnTemoFileResource,
   options?: CreateOrReturnTempFileOptions,
-): Promise<CreateFnOutput> => {
+): Promise<ResourceCreationResult> => {
   await ensureDir(tempDirPath);
-  const tempPath = join(tempDirPath, resource.name);
-  const tempLockPath = join(tempDirPath, resource.name + ".lock");
+  const dataFilePath = join(tempDirPath, resource.name);
+  const lockFilePath = join(tempDirPath, resource.name + ".lock");
 
   let lockFileCreated = false;
 
   try {
+    const [dataFileExists, lockFileExists] = await Promise.all([
+      exists(dataFilePath),
+      exists(lockFilePath),
+    ]);
+    if (dataFileExists && !lockFileExists) {
+      return await readDataFile(dataFilePath);
+    }
+
     try {
-      const lockFile = await Deno.open(tempLockPath, {
+      const lockFile = await Deno.open(lockFilePath, {
         createNew: true,
         write: true,
         read: true,
@@ -48,38 +55,51 @@ export const createOrReturnTempFile = async (
       const maxCounter = options?.maxWaitLoops ?? 1000;
       const waitTime = options?.waitTimeout ?? 100;
 
-      let doesLockExist = await exists(tempLockPath);
+      let doesLockExist = await exists(lockFilePath);
       while (doesLockExist) {
         if (counter > maxCounter) {
           throw new Error(
-            `Lock file ${tempLockPath} was not removed in time. Waited ${
+            `Lock file ${lockFilePath} was not removed in time. Waited ${
               (counter * waitTime) / 1000
             } seconds.`,
           );
         }
         counter++;
         await sleep(waitTime);
-        doesLockExist = await exists(tempLockPath);
+        doesLockExist = await exists(lockFilePath);
       }
 
-      const fileBuffer = await Deno.readTextFile(tempPath);
-      return {
-        data: JSON.parse(fileBuffer),
-        path: tempPath,
-        created: false,
-        createdTimestamp: Date.now(),
-      };
+      return await readDataFile(dataFilePath);
     }
 
     const data = await resource.creatorFn();
-    await Deno.writeTextFile(tempPath, JSON.stringify(data));
+    await Deno.writeTextFile(dataFilePath, JSON.stringify(data));
     return {
-      path: tempPath,
+      path: dataFilePath,
       data,
       created: true,
       createdTimestamp: Date.now(),
     };
   } finally {
-    if (lockFileCreated) await Deno.remove(tempLockPath);
+    if (lockFileCreated) await Deno.remove(lockFilePath);
   }
 };
+
+const readDataFile = async (dataFilePath: string) => {
+  const fileBuffer = await Deno.readTextFile(dataFilePath);
+  return {
+    data: JSON.parse(fileBuffer),
+    path: dataFilePath,
+    created: false,
+    createdTimestamp: Date.now(),
+  };
+};
+
+async function exists(filePath: string) {
+  try {
+    await Deno.lstat(filePath);
+    return true;
+  } catch (_err) {
+    return false;
+  }
+}

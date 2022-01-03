@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any ban-types
 // need to manually import jest types. Found no way to do this automatic
 interface FunctionLike {
   readonly name: string;
@@ -18,17 +19,17 @@ type ExtractEachCallbackArgs<T extends ReadonlyArray<any>> = {
   "fallback": Array<(T extends ReadonlyArray<infer U> ? U : any)>;
 }[
   T extends Readonly<[any]> ? 1
-  : T extends Readonly<[any, any]> ? 2
-  : T extends Readonly<[any, any, any]> ? 3
-  : T extends Readonly<[any, any, any, any]> ? 4
-  : T extends Readonly<[any, any, any, any, any]> ? 5
-  : T extends Readonly<[any, any, any, any, any, any]> ? 6
-  : T extends Readonly<[any, any, any, any, any, any, any]> ? 7
-  : T extends Readonly<[any, any, any, any, any, any, any, any]> ? 8
-  : T extends Readonly<[any, any, any, any, any, any, any, any, any]> ? 9
-  : T extends Readonly<[any, any, any, any, any, any, any, any, any, any]>
-  ? 10
-  : "fallback"
+    : T extends Readonly<[any, any]> ? 2
+    : T extends Readonly<[any, any, any]> ? 3
+    : T extends Readonly<[any, any, any, any]> ? 4
+    : T extends Readonly<[any, any, any, any, any]> ? 5
+    : T extends Readonly<[any, any, any, any, any, any]> ? 6
+    : T extends Readonly<[any, any, any, any, any, any, any]> ? 7
+    : T extends Readonly<[any, any, any, any, any, any, any, any]> ? 8
+    : T extends Readonly<[any, any, any, any, any, any, any, any, any]> ? 9
+    : T extends Readonly<[any, any, any, any, any, any, any, any, any, any]>
+      ? 10
+    : "fallback"
 ];
 
 interface Each {
@@ -39,10 +40,10 @@ interface Each {
   <T extends ReadonlyArray<any>>(
     cases: ReadonlyArray<T>,
   ): (
-      name: string,
-      fn: (...args: ExtractEachCallbackArgs<T>) => any,
-      timeout?: number,
-    ) => void;
+    name: string,
+    fn: (...args: ExtractEachCallbackArgs<T>) => any,
+    timeout?: number,
+  ) => void;
   // Not arrays.
   <T>(
     cases: ReadonlyArray<T>,
@@ -96,6 +97,7 @@ const createCustomDescribe = <T extends Function>(
   return customDescribe;
 };
 
-export const JestWorkerId = () => parseInt(Deno.env.get("JEST_WORKER_ID") ?? "0", 10)
+export const jestWorkerId = () =>
+  parseInt(Deno.env.get("JEST_WORKER_ID") ?? "0", 10);
 
 export default createCustomDescribe;
