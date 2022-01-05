@@ -20,7 +20,7 @@
   2. resources which has static code (like Database-Server). 
 - Optional preheat caching: Resources which are not needed for the first runs but later are getting preheated after initialization to speed up test runs with reducing waiting times.
 - Optional initialization of a test run (deleting of currently saved creations).
-- Hanlding of single creation with multiple initializations (like starting one database server and creating multiple databases).
+- Handling of single creation with multiple initializations (like starting one database server and creating multiple databases).
 - Waiting mechanism for creation to run multiple processes in parallel.
 - Pretty logging of each running resource.
 - Optional teardown of all running test resources.
@@ -35,7 +35,7 @@ You have multiple `processes` which execute the tests. Before you start any test
 
 While the test are running: The processes, which where started in the create function of the `Resource`, will get logged all in one `.txt` file in the `tempDir`. This file could optionally be outputted from the `TestEnvParalellization.init()` method. 
 
-After all tests are done you have to call `TestEnvParalellization.teardown('some-name')` this calla every teardown function of each `Resource`. It will also printout a path to a copy of the log-file and clears the `tempDir`.
+After all tests are done you have to call `TestEnvParalellization.teardown('some-name')` this calls every teardown function of each `Resource`. It will also printout a path to a copy of the log-file and clears the `tempDir`.
   
 
 ## Future
