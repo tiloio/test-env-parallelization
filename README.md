@@ -18,6 +18,7 @@
 - Two types of test resources: 
   1. resources which depends on frequently changing code (like WebServer under test) and 
   2. resources which has static code (like Database-Server). 
+- Optional preheat caching: Resources which are not needed for the first runs but later are getting preheated after initialization to speed up test runs with reducing waiting times.
 - Optional initialization of a test run (deleting of currently saved creations).
 - Hanlding of single creation with multiple initializations (like starting one database server and creating multiple databases).
 - Waiting mechanism for creation to run multiple processes in parallel.
