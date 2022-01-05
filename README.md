@@ -38,6 +38,10 @@ While the test are running: The processes, which where started in the create fun
 After all tests are done you have to call `TestEnvParalellization.teardown('some-name')` this calla every teardown function of each `Resource`. It will also printout a path to a copy of the log-file and clears the `tempDir`.
   
 
+## Future
+
+- Dashboard (website) which shows all test runs ever done (via log readout) and live view of current runs (via `tempDir` file watcher). To archive that we need to also printout the testframeworks logs (e.g. we need a Jest-Adapter).
+
 ## License
 
 MIT License
